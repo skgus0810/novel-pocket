@@ -1,32 +1,41 @@
-# React + TypeScript + Vite
+# What to Write — Foundation v1
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+아이폰·아이패드에서 홈 화면에 설치해 쓸 수 있는 React + TypeScript + Vite PWA입니다.
 
-Currently, two official plugins are available:
+## 들어 있는 기능
+- Y2K·픽셀·키치 홈 화면과 6가지 테마
+- 집중형 집필 화면
+- 홈과 집필 화면의 공백 포함/제외 글자 수 기준 공유
+- 목표 글자 수와 진행률
+- 0.5초 자동 저장 및 최대 30개 원고 스냅샷
+- 시놉시스 카드 추가·삭제·순서 이동
+- 소재·에피소드 메모
+- JSON 백업 내보내기·가져오기
+- PWA manifest, service worker, 아이폰·아이패드 대응
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## StackBlitz에 적용
+1. ZIP 압축을 풉니다.
+2. 압축 안의 파일과 폴더 전체를 현재 `novel-pocket` 프로젝트에 덮어씁니다.
+3. 터미널에서 아래를 실행합니다.
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+4. 기능을 확인한 뒤 커밋합니다.
+
+```text
+Install What to Write Foundation v1
+```
+
+## 확인할 기능
+- 홈에서 공백 포함/제외 전환
+- 이어쓰기에서 제목·원고 입력 후 새로고침 복구
+- 테마 변경 후 새로고침 유지
+- 시놉시스 순서 변경
+- 빠른 메모 `＋`
+- 설정에서 JSON 백업 내보내기·가져오기
+
+## 저장 주의
+현재 데이터는 브라우저 `localStorage`에 저장됩니다. 새로고침과 앱 종료에는 유지되지만 기기 초기화나 브라우저 데이터 삭제에는 대비할 수 없으므로 JSON 백업을 파일 앱이나 클라우드에 보관하세요.

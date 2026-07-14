@@ -1,40 +1,31 @@
-import './index.css'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
-function App() {
-  return (
-    <main
-      style={{
-        minHeight: '100vh',
-        display: 'grid',
-        placeItems: 'center',
-        padding: '24px',
-      }}
-    >
-      <section
-        style={{
-          width: 'min(100%, 520px)',
-          padding: '40px 24px',
-          border: '3px solid var(--border)',
-          borderRadius: '28px',
-          background: 'var(--surface-strong)',
-          boxShadow: 'var(--shadow)',
-          textAlign: 'center',
-        }}
-      >
-        <h1 style={{ margin: 0, fontSize: '42px' }}>
-          ✦ WHAT
-          <br />
-          TO
-          <br />
-          WRITE ✦
-        </h1>
+type Theme='bubble'|'strawberry'|'mint'|'lavender'|'butter'|'night'
+type Page='home'|'write'|'synopsis'|'notes'|'settings'
+type CountMode='without'|'with'
+type Card={id:string,title:string,content:string}
+type Note={id:string,title:string,content:string,updatedAt:string}
+type Data={title:string,manuscript:string,goal:number,countMode:CountMode,theme:Theme,synopsis:Card[],notes:Note[],snapshots:{id:string,createdAt:string,title:string,manuscript:string}[]}
+const KEY='what-to-write-v1'
+const defaults:Data={title:'새 작품',manuscript:'',goal:3000,countMode:'without',theme:'bubble',synopsis:['기','승','전','결'].map(title=>({id:crypto.randomUUID(),title,content:''})),notes:[],snapshots:[]}
+const themes:{id:Theme,name:string,emoji:string}[]=[{id:'bubble',name:'Bubble Pop',emoji:'🩷'},{id:'strawberry',name:'Strawberry',emoji:'🍓'},{id:'mint',name:'Mint Soda',emoji:'🌿'},{id:'lavender',name:'Lavender',emoji:'💜'},{id:'butter',name:'Butter Star',emoji:'⭐'},{id:'night',name:'Pixel Night',emoji:'🌙'}]
+function load():Data{try{return {...defaults,...JSON.parse(localStorage.getItem(KEY)||'{}')}}catch{return defaults}}
 
-        <p style={{ marginTop: '24px', fontWeight: 700 }}>
-          화면 복구 성공!
-        </p>
-      </section>
-    </main>
-  )
+export default function App(){
+ const [data,setData]=useState<Data>(load),[page,setPage]=useState<Page>('home'),[themeOpen,setThemeOpen]=useState(false),[saving,setSaving]=useState(false),[savedAt,setSavedAt]=useState<Date|null>(null)
+ const fileRef=useRef<HTMLInputElement>(null)
+ const noSpaces=useMemo(()=>data.manuscript.replace(/\s/g,'').length,[data.manuscript]),withSpaces=data.manuscript.length,count=data.countMode==='with'?withSpaces:noSpaces
+ const patch=(p:Partial<Data>)=>setData(d=>({...d,...p}))
+ useEffect(()=>{document.documentElement.dataset.theme=data.theme;setSaving(true);const t=setTimeout(()=>{try{localStorage.setItem(KEY,JSON.stringify(data));setSavedAt(new Date())}finally{setSaving(false)}},500);return()=>clearTimeout(t)},[data])
+ const exportData=()=>{const u=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'})),a=document.createElement('a');a.href=u;a.download=`what-to-write-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(u)}
+ const importData=async(f:File)=>{try{const x=JSON.parse(await f.text());if(typeof x.manuscript!=='string')throw 0;setData({...defaults,...x});alert('백업을 불러왔어요.')}catch{alert('지원하지 않는 백업 파일이에요.')}}
+ const snapshot=()=>{patch({snapshots:[{id:crypto.randomUUID(),createdAt:new Date().toISOString(),title:data.title,manuscript:data.manuscript},...data.snapshots].slice(0,30)});alert('복구 스냅샷을 만들었어요.')}
+ const nav=<nav className="bottom"><button onClick={()=>setPage('home')}>⌂<small>홈</small></button><button onClick={()=>setPage('write')}>✎<small>집필</small></button><button className="plus" onClick={()=>{patch({notes:[{id:crypto.randomUUID(),title:'',content:'',updatedAt:new Date().toISOString()},...data.notes]});setPage('notes')}}>＋</button><button onClick={()=>setPage('notes')}>☁<small>메모</small></button><button onClick={()=>setPage('settings')}>⚙<small>설정</small></button></nav>
+ const picker=<div className="theme-grid">{themes.map(t=><button key={t.id} className={data.theme===t.id?'selected':''} onClick={()=>{patch({theme:t.id});setThemeOpen(false)}}><span>{t.emoji}</span><small>{t.name}</small></button>)}</div>
+ if(page==='write')return <div className="writer"><header><button onClick={()=>setPage('home')}>← 홈</button><span className="save">● {saving?'저장 중...':'자동 저장됨'}</span><div><button onClick={snapshot}>백업</button><button onClick={()=>setThemeOpen(!themeOpen)}>테마</button></div></header>{themeOpen&&<aside className="writer-picker">{picker}</aside>}<main><section className="title-row"><input value={data.title} onChange={e=>patch({title:e.target.value})}/><div className="count-toggle"><button className={data.countMode==='without'?'on':''} onClick={()=>patch({countMode:'without'})}>공백 제외</button><button className={data.countMode==='with'?'on':''} onClick={()=>patch({countMode:'with'})}>공백 포함</button><b>{count.toLocaleString()}자</b></div></section><textarea autoFocus spellCheck={false} value={data.manuscript} onChange={e=>patch({manuscript:e.target.value})} placeholder="이야기를 시작해보세요..."/><footer>공백 제외 {noSpaces.toLocaleString()}자 · 공백 포함 {withSpaces.toLocaleString()}자 {savedAt&&`· 마지막 저장 ${savedAt.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}`}</footer></main></div>
+ if(page==='synopsis')return <><div className="sub"><header><button onClick={()=>setPage('home')}>← 홈</button><h1>시놉시스</h1><button onClick={()=>patch({synopsis:[...data.synopsis,{id:crypto.randomUUID(),title:'새 단계',content:''}]})}>＋ 추가</button></header><main><p>화살표로 카드 순서를 자유롭게 바꿔보세요.</p>{data.synopsis.map((c,i)=><article className="syn-card" key={c.id}><div><button disabled={!i} onClick={()=>{const a=[...data.synopsis];[a[i-1],a[i]]=[a[i],a[i-1]];patch({synopsis:a})}}>↑</button><button disabled={i===data.synopsis.length-1} onClick={()=>{const a=[...data.synopsis];[a[i],a[i+1]]=[a[i+1],a[i]];patch({synopsis:a})}}>↓</button></div><section><input value={c.title} onChange={e=>patch({synopsis:data.synopsis.map(x=>x.id===c.id?{...x,title:e.target.value}:x)})}/><textarea value={c.content} onChange={e=>patch({synopsis:data.synopsis.map(x=>x.id===c.id?{...x,content:e.target.value}:x)})} placeholder="이 단계에서 일어나는 일을 적어보세요."/></section><button onClick={()=>patch({synopsis:data.synopsis.filter(x=>x.id!==c.id)})}>×</button></article>)}</main></div>{nav}</>
+ if(page==='notes')return <><div className="sub"><header><button onClick={()=>setPage('home')}>← 홈</button><h1>메모</h1><button onClick={()=>patch({notes:[{id:crypto.randomUUID(),title:'',content:'',updatedAt:new Date().toISOString()},...data.notes]})}>＋ 메모</button></header><main><div className="notes">{data.notes.length?data.notes.map((n,i)=><article className={`note n${i%3}`} key={n.id}><input value={n.title} placeholder="메모 제목" onChange={e=>patch({notes:data.notes.map(x=>x.id===n.id?{...x,title:e.target.value,updatedAt:new Date().toISOString()}:x)})}/><textarea value={n.content} placeholder="아이디어를 적어보세요." onChange={e=>patch({notes:data.notes.map(x=>x.id===n.id?{...x,content:e.target.value,updatedAt:new Date().toISOString()}:x)})}/><button onClick={()=>patch({notes:data.notes.filter(x=>x.id!==n.id)})}>삭제</button></article>):<div className="empty">☁<b>아직 메모가 없어요</b><p>스쳐 지나가는 소재와 에피소드를 붙잡아두세요.</p></div>}</div></main></div>{nav}</>
+ if(page==='settings')return <><div className="sub"><header><button onClick={()=>setPage('home')}>← 홈</button><h1>설정</h1><span/></header><main className="settings"><section><h2>테마</h2>{picker}</section><section><h2>원고 보호</h2><p>내용은 브라우저에 자동 저장돼요. 기기 초기화나 브라우저 데이터 삭제에 대비해 백업 파일도 보관하세요.</p><button className="primary" onClick={exportData}>백업 파일 내보내기</button><button onClick={()=>fileRef.current?.click()}>백업 파일 가져오기</button><input ref={fileRef} hidden type="file" accept=".json,application/json" onChange={e=>e.target.files?.[0]&&importData(e.target.files[0])}/></section><section><h2>현재 데이터</h2><p>시놉시스 {data.synopsis.length}개 · 메모 {data.notes.length}개 · 스냅샷 {data.snapshots.length}개</p></section></main></div>{nav}</>
+ const progress=Math.min(Math.round(count/Math.max(data.goal,1)*100),100)
+ return <><div className="app"><header className="top"><b>WTW ✦</b><button onClick={()=>setThemeOpen(!themeOpen)}>테마 ✦</button></header><main><section className="brand"><div className="ring"/><h1>✦ WHAT<small>TO</small><span>WRITE ✦</span></h1><p>오늘도 한 줄,<br/>나만의 이야기를 시작해요</p></section><section className="card"><label>TODAY&apos;S WRITING</label><small>{data.title}</small><div className="counts"><div><p>현재 원고</p><strong>{count.toLocaleString()}자</strong></div><div className="goal"><span>목표</span><input type="number" min="1" value={data.goal} onChange={e=>patch({goal:Math.max(+e.target.value,1)})}/>자</div></div><div className="home-mode"><span>글자 수 기준</span><div className="count-toggle"><button className={data.countMode==='without'?'on':''} onClick={()=>patch({countMode:'without'})}>공백 제외</button><button className={data.countMode==='with'?'on':''} onClick={()=>patch({countMode:'with'})}>공백 포함</button></div></div><div className="bar"><i style={{width:`${progress}%`}}>★</i></div><div className="bar-info"><span>{progress}% 완료</span><span>{Math.max(data.goal-count,0).toLocaleString()}자 남음</span></div><button className="continue" onClick={()=>setPage('write')}>✦ {count?'이어쓰기':'첫 문장 쓰기'} →</button></section><section className="menus"><button onClick={()=>setPage('write')}>📚<span><b>작품</b><small>현재 작품 집필하기</small></span>→</button><button onClick={()=>setPage('synopsis')}>🧩<span><b>시놉시스</b><small>순서를 자유롭게 정리하기</small></span>→</button><button onClick={()=>setPage('notes')}>💡<span><b>메모</b><small>스쳐 가는 생각 기록하기</small></span>→</button></section></main></div>{themeOpen&&<div className="modal" onClick={()=>setThemeOpen(false)}><section onClick={e=>e.stopPropagation()}><header><h2>오늘의 테마</h2><button onClick={()=>setThemeOpen(false)}>×</button></header>{picker}</section></div>}{nav}</>
 }
-
-export default App
