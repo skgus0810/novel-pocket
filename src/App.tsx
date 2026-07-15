@@ -26,6 +26,8 @@ import type {
   WritingProject,
 } from './types/app'
 
+import { ConflictDialog } from './components/ConflictDialog'
+
 const PAGE_KEY = 'what-to-write-last-page-v2'
 
 function App() {
@@ -42,14 +44,20 @@ function App() {
     setData(remote)
   }, [])
 
-  const {
-    status: cloudStatus,
-    lastSavedAt: cloudSavedAt,
-  } = useCloudSync({
-    data,
-    session,
-    onRemoteData: receiveRemoteData,
-  })
+ const {
+  status: cloudStatus,
+  lastSavedAt: cloudSavedAt,
+  conflict,
+  errorMessage,
+  resolveWithRemote,
+  resolveWithLocal,
+  refreshFromCloud,
+} = useCloudSync({
+  data,
+  session,
+  onRemoteData: receiveRemoteData,
+})
+
 
   const activeProject =
     data.projects.find(
@@ -285,37 +293,47 @@ function App() {
 
   return (
     <>
-      <div className={`cloud-badge cloud-${cloudStatus}`}>
-        <span>
-          {cloudStatus === 'synced'
-            ? '☁ 클라우드 저장됨'
-            : cloudStatus === 'saving'
-              ? '☁ 저장 중'
-              : cloudStatus === 'offline'
-                ? '오프라인'
-                : cloudStatus === 'error'
-                  ? '클라우드 오류'
-                  : '불러오는 중'}
-        </span>
+    <div className={`cloud-badge cloud-${cloudStatus}`}>
+  <span>
+    {cloudStatus === 'synced'
+      ? '☁ 클라우드 저장됨'
+      : cloudStatus === 'saving'
+        ? '☁ 저장 중'
+        : cloudStatus === 'offline'
+          ? '오프라인'
+          : cloudStatus === 'conflict'
+            ? '⚠ 동기화 충돌'
+            : cloudStatus === 'error'
+              ? '클라우드 오류'
+              : '불러오는 중'}
+  </span>
 
-        {cloudSavedAt && (
-          <small>
-            {cloudSavedAt.toLocaleTimeString('ko-KR', {
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
-          </small>
-        )}
+  {cloudSavedAt && (
+    <small>
+      {cloudSavedAt.toLocaleTimeString('ko-KR', {
+        hour: '2-digit',
+        minute: '2-digit',
+      })}
+    </small>
+  )}
 
-        <button
-          type="button"
-          onClick={() => void supabase.auth.signOut()}
-        >
-          로그아웃
-        </button>
-      </div>
+  <button
+    type="button"
+    onClick={() => void supabase.auth.signOut()}
+  >
+    로그아웃
+  </button>
+</div>
 
       {content}
+
+{conflict && (
+  <ConflictDialog
+    conflict={conflict}
+    onUseRemote={() => void resolveWithRemote()}
+    onKeepLocal={() => void resolveWithLocal()}
+  />
+)}
 
       {page !== 'write' && (
         <BottomNav
