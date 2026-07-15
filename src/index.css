@@ -1591,3 +1591,122 @@ button:active {
   font-size: 13px;
   font-weight: 900;
 }
+.auth-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 20% 20%, var(--primary-soft), transparent 30%),
+    radial-gradient(circle at 80% 80%, var(--secondary-soft), transparent 30%),
+    var(--bg);
+}
+
+.auth-card {
+  width: min(100%, 460px);
+  padding: 30px;
+  border: 2px solid var(--blue);
+  border-radius: 18px;
+  background: var(--surface-strong);
+  box-shadow: 0 18px 45px rgb(45 111 145 / 17%);
+}
+
+.auth-description {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.auth-card form {
+  display: grid;
+  gap: 16px;
+}
+
+.auth-card label {
+  display: grid;
+  gap: 7px;
+  font-weight: 900;
+}
+
+.auth-card input {
+  min-height: 50px;
+  padding: 0 14px;
+  border: 2px solid color-mix(in srgb, var(--border) 40%, transparent);
+  border-radius: 9px;
+  background: var(--surface-strong);
+}
+
+.auth-submit {
+  min-height: 52px;
+  border: 2px solid var(--blue);
+  border-radius: 9px;
+  background: linear-gradient(
+    90deg,
+    var(--primary-soft),
+    var(--secondary-soft)
+  );
+  font-weight: 1000;
+}
+
+.auth-mode-button {
+  width: 100%;
+  margin-top: 16px;
+  border: 0;
+  background: transparent;
+  color: var(--primary-deep);
+  text-decoration: underline;
+  font-weight: 900;
+}
+
+.auth-error,
+.auth-message {
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.auth-error {
+  background: #ffe7ec;
+  color: #a82f4a;
+}
+
+.auth-message {
+  background: var(--secondary-soft);
+}
+
+.cloud-badge {
+  position: fixed;
+  z-index: 90;
+  top: 10px;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  transform: translateX(-50%);
+  border: 1px solid color-mix(in srgb, var(--border) 35%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-strong) 94%, transparent);
+  box-shadow: 0 6px 18px rgb(45 111 145 / 12%);
+  font-size: 11px;
+  font-weight: 900;
+  backdrop-filter: blur(14px);
+}
+
+.cloud-badge small {
+  color: var(--muted);
+}
+
+.cloud-badge button {
+  border: 0;
+  background: transparent;
+  color: var(--primary-deep);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.cloud-loading-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+}

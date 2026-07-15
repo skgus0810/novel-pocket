@@ -1,13 +1,17 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import type { Session } from '@supabase/supabase-js'
 import { BottomNav } from './components/BottomNav'
 import { ThemePicker } from './components/ThemePicker'
 import { useAutosave } from './hooks/useAutosave'
+import { useCloudSync } from './hooks/useCloudSync'
 import {
   createProject,
   downloadBackup,
   loadData,
   readBackupFile,
 } from './lib/storage'
+import { supabase } from './lib/supabase'
+import { AuthPage } from './pages/AuthPage'
 import { HomePage } from './pages/HomePage'
 import { NotesPage } from './pages/NotesPage'
 import { ProjectsPage } from './pages/ProjectsPage'
@@ -30,12 +34,43 @@ function App() {
     return (localStorage.getItem(PAGE_KEY) as PageName) || 'home'
   })
   const [showThemes, setShowThemes] = useState(false)
+  const [session, setSession] = useState<Session | null>(null)
+  const [authReady, setAuthReady] = useState(false)
   const { saveStatus, lastSavedAt } = useAutosave(data)
+
+  const receiveRemoteData = useCallback((remote: AppData) => {
+    setData(remote)
+  }, [])
+
+  const {
+    status: cloudStatus,
+    lastSavedAt: cloudSavedAt,
+  } = useCloudSync({
+    data,
+    session,
+    onRemoteData: receiveRemoteData,
+  })
 
   const activeProject =
     data.projects.find(
       (project) => project.id === data.activeProjectId,
     ) || data.projects[0]
+
+  useEffect(() => {
+    void supabase.auth.getSession().then(({ data: authData }) => {
+      setSession(authData.session)
+      setAuthReady(true)
+    })
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession)
+      setAuthReady(true)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
 
   useEffect(() => {
     localStorage.setItem(PAGE_KEY, page)
@@ -90,16 +125,16 @@ function App() {
         (project) => project.id !== id,
       )
 
-      if (projects.length === 0) {
-        return current
+      if (projects.length === 0) return current
+
+      return {
+        ...current,
+        projects,
+        activeProjectId:
+          current.activeProjectId === id
+            ? projects[0].id
+            : current.activeProjectId,
       }
-
-      const activeProjectId =
-        current.activeProjectId === id
-          ? projects[0].id
-          : current.activeProjectId
-
-      return { ...current, projects, activeProjectId }
     })
   }
 
@@ -114,13 +149,11 @@ function App() {
     patchActiveProject({
       backups: [snapshot, ...activeProject.backups].slice(0, 30),
     })
-    window.alert('현재 작품의 복구 스냅샷을 만들었어요.')
   }
 
   async function importBackup(file: File) {
     try {
       setData(await readBackupFile(file))
-      window.alert('백업을 불러왔어요.')
     } catch (error) {
       window.alert(
         error instanceof Error
@@ -128,6 +161,14 @@ function App() {
           : '백업을 불러오지 못했어요.',
       )
     }
+  }
+
+  if (!authReady) {
+    return <main className="cloud-loading-page">불러오는 중...</main>
+  }
+
+  if (!session) {
+    return <AuthPage />
   }
 
   let content
@@ -244,6 +285,36 @@ function App() {
 
   return (
     <>
+      <div className={`cloud-badge cloud-${cloudStatus}`}>
+        <span>
+          {cloudStatus === 'synced'
+            ? '☁ 클라우드 저장됨'
+            : cloudStatus === 'saving'
+              ? '☁ 저장 중'
+              : cloudStatus === 'offline'
+                ? '오프라인'
+                : cloudStatus === 'error'
+                  ? '클라우드 오류'
+                  : '불러오는 중'}
+        </span>
+
+        {cloudSavedAt && (
+          <small>
+            {cloudSavedAt.toLocaleTimeString('ko-KR', {
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
+          </small>
+        )}
+
+        <button
+          type="button"
+          onClick={() => void supabase.auth.signOut()}
+        >
+          로그아웃
+        </button>
+      </div>
+
       {content}
 
       {page !== 'write' && (
